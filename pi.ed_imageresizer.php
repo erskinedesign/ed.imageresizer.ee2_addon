@@ -6,7 +6,7 @@
  * REQUIRES ExpressionEngine 2+
  * 
  * @package     ED_ImageResizer
- * @version     0.9.0
+ * @version     1.0.0
  * @author      Glen Swinfield (Erskine Design)
  * @copyright   Copyright (c) 2009 Erskine Design
  * @license     http://creativecommons.org/licenses/by-sa/3.0/ Attribution-Share Alike 3.0 Unported
@@ -14,7 +14,7 @@
  */
  
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '0.9.0',
+                        'pi_version'        => '1.0.0',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
@@ -25,7 +25,7 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
  * 
  * @package     ED_ImageResizer
  * @author      Erskine Design
- * @version     0.9.0
+ * @version     1.0.0
  * 
  */
 Class Ed_imageresizer
@@ -59,32 +59,32 @@ Class Ed_imageresizer
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
-    private $cache_path         = ''; // with trailing slash
+    private $cache_path         = '/'; // with trailing slash
     
     private $memory_limit       = '36M'; // the memory limit to set
 
     /**
      * Constructor
      */
-    public function __construct( )
+    public function Ed_imageresizer( )
     {
         $EE =& get_instance();
-        $this->EE->load->library('typography'); 
+        $EE->load->library('typography'); 
         
-        $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
-        $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
-        $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($this->EE->TMPL->fetch_param('image'))));
-        $this->maxWidth       = $this->EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
-        $this->maxHeight      = $this->EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
-        $this->color          = $this->EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $this->EE->TMPL->fetch_param('color')) : FALSE;
-        $this->cropratio      = $this->EE->TMPL->fetch_param('cropratio');
-        $this->class          = $this->EE->TMPL->fetch_param('class');
-        $this->title          = $this->EE->TMPL->fetch_param('title');
-        $this->id             = $this->EE->TMPL->fetch_param('id');
-        $this->alt            = $this->EE->TMPL->fetch_param('alt');
-        $this->default_image  = (string) html_entity_decode($this->EE->TMPL->fetch_param('default'));
-        $this->href_only      = $this->EE->TMPL->fetch_param('href_only');
-        $this->debug          = $this->EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
+        $this->forceWidth     = $EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
+        $this->forceHeight    = $EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
+        $this->image          = $EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($EE->TMPL->fetch_param('image'))));
+        $this->maxWidth       = $EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $EE->TMPL->fetch_param('maxWidth')  : 0;
+        $this->maxHeight      = $EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $EE->TMPL->fetch_param('maxHeight') : 0;
+        $this->color          = $EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $EE->TMPL->fetch_param('color')) : FALSE;
+        $this->cropratio      = $EE->TMPL->fetch_param('cropratio');
+        $this->class          = $EE->TMPL->fetch_param('class');
+        $this->title          = $EE->TMPL->fetch_param('title');
+        $this->id             = $EE->TMPL->fetch_param('id');
+        $this->alt            = $EE->TMPL->fetch_param('alt');
+        $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
+        $this->href_only      = $EE->TMPL->fetch_param('href_only');
+        $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
         
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
