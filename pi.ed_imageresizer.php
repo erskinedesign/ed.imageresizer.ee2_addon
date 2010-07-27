@@ -6,7 +6,7 @@
  * REQUIRES ExpressionEngine 2+
  * 
  * @package     ED_ImageResizer
- * @version     1.0.0
+ * @version     1.1.0
  * @author      Glen Swinfield (Erskine Design)
  * @copyright   Copyright (c) 2009 Erskine Design
  * @license     http://creativecommons.org/licenses/by-sa/3.0/ Attribution-Share Alike 3.0 Unported
@@ -14,7 +14,7 @@
  */
  
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '1.0.0',
+                        'pi_version'        => '1.1.0',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
@@ -25,7 +25,7 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
  * 
  * @package     ED_ImageResizer
  * @author      Erskine Design
- * @version     1.0.0
+ * @version     1.1.0
  * 
  */
 Class Ed_imageresizer
@@ -59,7 +59,7 @@ Class Ed_imageresizer
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
-    private $cache_path         = '/'; // with trailing slash
+    private $cache_path         = ''; // with trailing slash
     
     private $memory_limit       = '36M'; // the memory limit to set
 
@@ -85,6 +85,19 @@ Class Ed_imageresizer
         $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
         $this->href_only      = $EE->TMPL->fetch_param('href_only');
         $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
+        $this->grayscale      = $EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+
+        // LOW EDIT: Get server and cache paths from config file
+        if ( ! $this->server_path )
+        {
+            $this->server_path = $EE->config->item('ed_server_path');
+        }
+
+        if ( ! $this->cache_path )
+        {
+            $this->cache_path = $EE->config->item('ed_cache_path');
+        }
+        // END LOW EDIT
         
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
@@ -155,6 +168,11 @@ Class Ed_imageresizer
         if(!file_exists($this->server_path . $this->image)) {
             return array(false, 'fatal', 'The image does not exist. Server path: '.$this->server_path . $this->image);
         }
+
+        // Sometimes a directory can be passed by accident instead of an image
+        if(is_dir($this->server_path . $this->image)) {
+            return array(false, 'fatal', 'The path specified was a directory, not an image: '.$this->server_path . $this->image);
+        }
         
         // Get the size and MIME type of the requested image
         $this->size        = GetImageSize($this->server_path . $this->image);
@@ -182,7 +200,7 @@ Class Ed_imageresizer
         }
     
         // generate cached filename
-        $this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio).$this->ext;
+		$this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale).$this->ext;
 
         // is already cached?
         if (file_exists($this->resized)) {
@@ -333,7 +351,13 @@ Class Ed_imageresizer
         
         // Resample the original image into the resized canvas we set up earlier
         ImageCopyResampled($this->dst, $this->src, 0, 0, $this->offsetX, $this->offsetY, $this->tnWidth, $this->tnHeight, $this->width, $this->height);
-        $this->etag = $this->_saveFile();
+        
+        // try to grayscale it
+        if ($this->grayscale == 'yes'){
+            $this->dst = $this->_makeGrayscale($this->dst);
+        }
+		
+		$this->etag = $this->_saveFile();
     }
     
     private function _saveFile(){
@@ -346,6 +370,20 @@ Class Ed_imageresizer
         ImageDestroy($this->src);
         ImageDestroy($this->dst);
 
+    }
+
+    private function _makeGrayscale($im) {
+        if (imageistruecolor($im)) {
+            imagetruecolortopalette($im, false, 256);
+        }
+
+        for ($c = 0; $c < imagecolorstotal($im); $c++) {
+            $col = imagecolorsforindex($im, $c);
+            $gray = round(0.299 * $col['red'] + 0.587 * $col['green'] + 0.114 * $col['blue']);
+            imagecolorset($im, $c, $gray, $gray, $gray);
+        }
+
+        return $im;
     }
 
     /**
