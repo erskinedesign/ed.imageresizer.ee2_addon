@@ -127,7 +127,7 @@ Class Ed_imageresizer
     }
     
     /**
-     * Runs all the elemenst of the resize process and returns the result.
+     * Runs all the elements of the resize process and returns the result.
      *
      */
     private function _run(){
@@ -233,7 +233,7 @@ Class Ed_imageresizer
  
         // if we get here we are going to need to try to do some resizing
         // so lets find out if we want to crop as well
-        if($this->cropratio != '') {
+        if($this->cropratio != '' || ($this->forceHeight === TRUE AND $this->forceWidth === TRUE AND $this->maxWidth != "" AND $this->maxHeight != "")) {
             $this->_crop();
         }
             
@@ -246,7 +246,13 @@ Class Ed_imageresizer
             
     private function _crop(){
         
-        $this->cropratio    = explode(':', $this->cropratio);
+		// If forceHeight and forceWidth have been set use maxWidth and maxHeight as the crop ratio
+        if ($this->cropratio == '' AND $this->forceHeight === TRUE AND $this->forceWidth === TRUE) {
+			$this->cropratio[0] = $this->maxWidth;
+			$this->cropratio[1] = $this->maxHeight;
+		} else {
+			$this->cropratio = explode(':', $this->cropratio);
+		}
         
         if (count($this->cropratio) == 2) {
             
