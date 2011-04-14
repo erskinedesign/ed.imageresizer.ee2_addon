@@ -80,8 +80,8 @@ Class Ed_imageresizer
 		$this->forceWidth    = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
 		$this->forceHeight   = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
 		$this->image         = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($this->EE->TMPL->fetch_param('image'))));
-		$this->maxWidth      = $this->EE->TMPL->fetch_param('maxWidth') != '' ?	 (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
-		$this->maxHeight     = $this->EE->TMPL->fetch_param('maxHeight') != '' ?	 (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
+		$this->maxWidth      = $this->EE->TMPL->fetch_param('maxWidth') != '' ? (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
+		$this->maxHeight     = $this->EE->TMPL->fetch_param('maxHeight') != '' ? (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
 		$this->color         = $this->EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $this->EE->TMPL->fetch_param('color')) : FALSE;
 		$this->cropratio     = $this->EE->TMPL->fetch_param('cropratio');
 		$this->class         = $this->EE->TMPL->fetch_param('class');
@@ -91,7 +91,7 @@ Class Ed_imageresizer
 		$this->default_image = (string) html_entity_decode($this->EE->TMPL->fetch_param('default'));
 		$this->href_only     = $this->EE->TMPL->fetch_param('href_only');
 		$this->debug         = $this->EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
-		$this->grayscale      = $EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+		$this->grayscale     = $this->EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
 
 		$this->absolute_url  = $this->EE->TMPL->fetch_param('absolute_url', FALSE);
 		$this->omit_size     = $this->EE->TMPL->fetch_param('omit_size', FALSE);
