@@ -59,7 +59,7 @@ Class Ed_imageresizer
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
-    private $cache_path         = '/'; // with trailing slash
+    private $cache_path         = ''; // with trailing slash
     
     private $memory_limit       = '36M'; // the memory limit to set
 
@@ -85,7 +85,14 @@ Class Ed_imageresizer
         $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
         $this->href_only      = $EE->TMPL->fetch_param('href_only');
         $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
-        
+            
+        /**
+         * Load in cache path and server path from config if they exist
+         *
+         */
+        if ( ! $this->server_path ) $this->server_path = $EE->config->item('ed_server_path');
+        if ( ! $this->cache_path ) $this->cache_path = $EE->config->item('ed_cache_path');
+            
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
         if( $this->cache_path == '' || $this->server_path == '' ) {
