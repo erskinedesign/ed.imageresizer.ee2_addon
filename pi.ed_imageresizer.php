@@ -1,5 +1,4 @@
 <?php
-// vim: exandtab softabstop=4 tabstop=4 shiftwidth=4
 
 /**
  * Erskine Design ImageResizer (PHP5 only)
@@ -14,7 +13,7 @@
  */
  
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '1.0.0',
+                        'pi_version'        => '1.0.1',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
@@ -25,7 +24,7 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
  * 
  * @package     ED_ImageResizer
  * @author      Erskine Design
- * @version     1.0.0
+ * @version     1.0.1
  * 
  */
 Class Ed_imageresizer
@@ -56,6 +55,7 @@ Class Ed_imageresizer
     private $default_image      = '';       // the default image to use if one is not passed into the params
     private $href_only          = '';       // only return the path to the file, not the full tag.
     private $ext                = '';
+    private $grayscale          = '';
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
@@ -85,7 +85,8 @@ Class Ed_imageresizer
         $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
         $this->href_only      = $EE->TMPL->fetch_param('href_only');
         $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
-            
+        $this->grayscale      = $EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+
         /**
          * Load in cache path and server path from config if they exist
          *
@@ -189,7 +190,7 @@ Class Ed_imageresizer
         }
     
         // generate cached filename
-        $this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio).$this->ext;
+        $this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale).$this->ext;
 
         // is already cached?
         if (file_exists($this->resized)) {
@@ -340,6 +341,10 @@ Class Ed_imageresizer
         
         // Resample the original image into the resized canvas we set up earlier
         ImageCopyResampled($this->dst, $this->src, 0, 0, $this->offsetX, $this->offsetY, $this->tnWidth, $this->tnHeight, $this->width, $this->height);
+        // try to grayscale it
+        if ($this->grayscale == TRUE){
+            $this->dst = $this->_makeGrayscale($this->dst);
+        }
         $this->etag = $this->_saveFile();
     }
     
@@ -353,6 +358,21 @@ Class Ed_imageresizer
         ImageDestroy($this->src);
         ImageDestroy($this->dst);
 
+    }
+
+
+    private function _makeGrayscale($im) {
+        if (imageistruecolor($im)) {
+            imagetruecolortopalette($im, false, 256);
+        }
+
+        for ($c = 0; $c < imagecolorstotal($im); $c++) {
+            $col = imagecolorsforindex($im, $c);
+            $gray = round(0.299 * $col['red'] + 0.587 * $col['green'] + 0.114 * $col['blue']);
+            imagecolorset($im, $c, $gray, $gray, $gray);
+        }
+
+        return $im;
     }
 
     /**
@@ -420,16 +440,17 @@ Paramaters:
 * image         ~ the file to resize, will parse file dirs
 * maxWidth      ~ maximumm width of resized image
 * maxHeight     ~ maximumm height of resized image
-* forceWidth    ~ scale up if required
-* forceHeight   ~ scale up if required
+* forceWidth    ~ scale up if required accepts "yes" or "no"
+* forceHeight   ~ scale up if required accepts "yes" or "no"
 * cropratio     ~ eg: square is 1:1
 * default       ~ the default image to use if there is no actual image
 * alt           ~ alt text
 * class         ~ img tag class
 * id            ~ img tag id
 * title         ~ img tag title
-* href_only     ~ if yes just returns the path to the resized file, not the full image tag, useful for modal windows etc.
-* debug         ~ defaults to no - yes for debug mode (creates error messages instead of quitting quietly)
+* href_only     ~ if yes just returns the path to the resized file, not the full image tag, useful for modal windows etc. accepts "yes" or "no"
+* debug         ~ defaults to no - yes for debug mode (creates error messages instead of quitting quietly) accepts "yes" or "no"
+* grayscale     ~ creates a grayscale version of the image accepts "yes" or "no"
 
 Usage Example
 ----------
@@ -438,7 +459,9 @@ Usage Example
     default=""/images/site/image_coming_soon.jpg"
     maxWidth="300"
     class="myimgclass"
-    alt="Image description"}
+    alt="Image description"
+    grayscale="yes"
+    }
 
 	<?php
 	$buffer = ob_get_contents();
