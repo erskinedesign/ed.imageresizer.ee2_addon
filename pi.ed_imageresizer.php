@@ -56,6 +56,7 @@ Class Ed_imageresizer
     private $href_only          = '';       // only return the path to the file, not the full tag.
     private $ext                = '';
     private $grayscale          = '';
+    private $remote             = '';
     private $EE                 = FALSE;
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
@@ -283,7 +284,6 @@ Class Ed_imageresizer
 
         if (!is_dir($this->remote_path)) {
             if (!mkdir($this->remote_path, 0777, true)) {
-                $this->return_data = sprintf($error_string, 'Could not create remote save directory');
                 return;
             }
         }
@@ -298,7 +298,7 @@ Class Ed_imageresizer
 		$file_contents = curl_exec($ch);
 		$info = curl_getinfo($ch);
 	
-	    // checks if the result from flickr is what we want
+	    // if there's an error - stop now
 		if (curl_errno($ch)) {
             return false;		
         } else {
@@ -506,6 +506,7 @@ Paramaters:
 * href_only     ~ if yes just returns the path to the resized file, not the full image tag, useful for modal windows etc. accepts "yes" or "no"
 * debug         ~ defaults to no - yes for debug mode (creates error messages instead of quitting quietly) accepts "yes" or "no"
 * grayscale     ~ creates a grayscale version of the image accepts "yes" or "no"
+* remote        ~ if set to true, will get the remote image first so we can resize it locally
 
 Usage Example
 ----------
@@ -516,6 +517,7 @@ Usage Example
     class="myimgclass"
     alt="Image description"
     grayscale="yes"
+    remote="yes"
     }
 
 	<?php
