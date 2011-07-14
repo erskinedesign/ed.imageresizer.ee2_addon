@@ -56,6 +56,7 @@ Class Ed_imageresizer
     private $href_only          = '';       // only return the path to the file, not the full tag.
     private $ext                = '';
     private $grayscale          = '';
+    private $EE                 = FALSE;
     
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
@@ -68,31 +69,32 @@ Class Ed_imageresizer
      */
     public function Ed_imageresizer( )
     {
-        $EE =& get_instance();
-        $EE->load->library('typography'); 
+        $this->EE =& get_instance();
         
-        $this->forceWidth     = $EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
-        $this->forceHeight    = $EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
-        $this->image          = $EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($EE->TMPL->fetch_param('image'))));
-        $this->maxWidth       = $EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $EE->TMPL->fetch_param('maxWidth')  : 0;
-        $this->maxHeight      = $EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $EE->TMPL->fetch_param('maxHeight') : 0;
-        $this->color          = $EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $EE->TMPL->fetch_param('color')) : FALSE;
-        $this->cropratio      = $EE->TMPL->fetch_param('cropratio');
-        $this->class          = $EE->TMPL->fetch_param('class');
-        $this->title          = $EE->TMPL->fetch_param('title');
-        $this->id             = $EE->TMPL->fetch_param('id');
-        $this->alt            = $EE->TMPL->fetch_param('alt');
-        $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
-        $this->href_only      = $EE->TMPL->fetch_param('href_only');
-        $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
-        $this->grayscale      = $EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+        $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
+        $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
+        $this->image          = $this->EE->TMPL->fetch_param('image');
+        $this->maxWidth       = $this->EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
+        $this->maxHeight      = $this->EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
+        $this->color          = $this->EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $this->EE->TMPL->fetch_param('color')) : FALSE;
+        $this->cropratio      = $this->EE->TMPL->fetch_param('cropratio');
+        $this->class          = $this->EE->TMPL->fetch_param('class');
+        $this->title          = $this->EE->TMPL->fetch_param('title');
+        $this->id             = $this->EE->TMPL->fetch_param('id');
+        $this->alt            = $this->EE->TMPL->fetch_param('alt');
+        $this->default_image  = (string) html_entity_decode($this->EE->TMPL->fetch_param('default'));
+        $this->href_only      = $this->EE->TMPL->fetch_param('href_only');
+        $this->debug          = $this->EE->TMPL->fetch_param('debug') != 'yes' ? FALSE : TRUE;
+        $this->grayscale      = $this->EE->TMPL->fetch_param('grayscale') != 'yes' ? FALSE : TRUE;
+        $this->remote         = $this->EE->TMPL->fetch_param('remote') != 'yes' ? FALSE : TRUE;
 
         /**
          * Load in cache path and server path from config if they exist
          *
          */
-        if ( ! $this->server_path ) $this->server_path = $EE->config->item('ed_server_path');
-        if ( ! $this->cache_path ) $this->cache_path = $EE->config->item('ed_cache_path');
+        if (!$this->server_path ) $this->server_path = $this->EE->config->item('ed_server_path');
+        if (!$this->cache_path ) $this->cache_path = $this->EE->config->item('ed_cache_path');
+        $this->remote_path = $this->cache_path . 'remote/';
             
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
@@ -127,6 +129,8 @@ Class Ed_imageresizer
      */
     private function _run(){
 
+        $this->EE->load->library('typography');         
+
         // are all paths writeable
         if (!file_exists($this->cache_path)) {
             if(!mkdir($this->cache_path, 0755)){
@@ -142,6 +146,13 @@ Class Ed_imageresizer
             return array(false, 'fatal', 'Cache path is not writable. Path: '.$this->cache_path);
         }
         // ----
+        
+        if ($this->remote) {
+            $this->_get_remote();
+        }
+
+        $this->image = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($this->image)));
+        
         
         // is there an image, if ot try to use default
         if($this->image == '' && $this->default_image == '') {
@@ -255,6 +266,50 @@ Class Ed_imageresizer
                 $this->offsetX      = ($this->origWidth - $this->width) / 2;
             }
         }
+    }
+
+    /**
+     * Get remote image and save locally
+     */
+    private function _get_remote() {
+
+        $url = parse_url($this->image);
+        $filename = (str_replace('/', '_', ltrim($url['path'], '/')));
+        if (file_exists($this->remote_path . $filename)) {
+            $mins_since_edit = round((time() - filectime($this->remote_path . $filename)) / 60);
+            $this->image = str_replace($this->server_path, '', $this->remote_path) . $filename;
+            return;
+        }
+
+        if (!is_dir($this->remote_path)) {
+            if (!mkdir($this->remote_path, 0777, true)) {
+                $this->return_data = sprintf($error_string, 'Could not create remote save directory');
+                return;
+            }
+        }
+
+		$ch = curl_init();
+		curl_setopt ($ch, CURLOPT_URL, $this->image);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    	curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);     
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		
+		$file_contents = curl_exec($ch);
+		$info = curl_getinfo($ch);
+	
+	    // checks if the result from flickr is what we want
+		if (curl_errno($ch)) {
+            return false;		
+        } else {
+			curl_close($ch);
+		}
+
+        $file = $this->remote_path . $filename;
+        $fp = fopen($file, 'x');
+        fwrite($fp, $file_contents);
+        fclose($fp);
+        $this->image = str_replace($this->server_path, '', $this->remote_path) . $filename;
     }
     
     private function _resize() {
