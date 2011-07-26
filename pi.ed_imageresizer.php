@@ -160,7 +160,7 @@ Class Ed_imageresizer
         }
             
         // If the image doesn't exist, or we haven't been told what it is, there's nothing that we can do
-        if(!file_exists($this->server_path . $this->image)) {
+        if(!file_exists($this->server_path . $this->image) || is_dir($this->server_path . $this->image)) {
             return array(false, 'fatal', 'The image does not exist. Server path: '.$this->server_path . $this->image);
         }
         
