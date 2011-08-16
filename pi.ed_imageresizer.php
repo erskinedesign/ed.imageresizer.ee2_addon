@@ -13,7 +13,7 @@
  */
  
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '1.0.2',
+                        'pi_version'        => '1.0.3',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
@@ -24,7 +24,7 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
  * 
  * @package     ED_ImageResizer
  * @author      Erskine Design
- * @version     1.0.1
+ * @version     1.0.3
  * 
  */
 Class Ed_imageresizer
@@ -63,36 +63,38 @@ Class Ed_imageresizer
     
     private $memory_limit       = '36M'; // the memory limit to set
 
+    private $EE                 = FALSE;
+
     /**
      * Constructor
      */
     public function Ed_imageresizer( )
     {
-        $EE =& get_instance();
-        $EE->load->library('typography'); 
+        $this->EE =& get_instance();
+        $this->EE->load->library('typography'); 
         
-        $this->forceWidth     = $EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
-        $this->forceHeight    = $EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
-        $this->image          = $EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($EE->TMPL->fetch_param('image'))));
-        $this->maxWidth       = $EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $EE->TMPL->fetch_param('maxWidth')  : 0;
-        $this->maxHeight      = $EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $EE->TMPL->fetch_param('maxHeight') : 0;
-        $this->color          = $EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $EE->TMPL->fetch_param('color')) : FALSE;
-        $this->cropratio      = $EE->TMPL->fetch_param('cropratio');
-        $this->class          = $EE->TMPL->fetch_param('class');
-        $this->title          = $EE->TMPL->fetch_param('title');
-        $this->id             = $EE->TMPL->fetch_param('id');
-        $this->alt            = $EE->TMPL->fetch_param('alt');
-        $this->default_image  = (string) html_entity_decode($EE->TMPL->fetch_param('default'));
-        $this->href_only      = $EE->TMPL->fetch_param('href_only');
-        $this->debug          = $EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
-        $this->grayscale      = $EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+        $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
+        $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
+        $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($this->EE->TMPL->fetch_param('image'))));
+        $this->maxWidth       = $this->EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
+        $this->maxHeight      = $this->EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
+        $this->color          = $this->EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $this->EE->TMPL->fetch_param('color')) : FALSE;
+        $this->cropratio      = $this->EE->TMPL->fetch_param('cropratio');
+        $this->class          = $this->EE->TMPL->fetch_param('class');
+        $this->title          = $this->EE->TMPL->fetch_param('title');
+        $this->id             = $this->EE->TMPL->fetch_param('id');
+        $this->alt            = $this->EE->TMPL->fetch_param('alt');
+        $this->default_image  = (string) html_entity_decode($this->EE->TMPL->fetch_param('default'));
+        $this->href_only      = $this->EE->TMPL->fetch_param('href_only');
+        $this->debug          = $this->EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
+        $this->grayscale      = $this->EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
 
         /**
          * Load in cache path and server path from config if they exist
          *
          */
-        if ( ! $this->server_path ) $this->server_path = $EE->config->item('ed_server_path');
-        if ( ! $this->cache_path ) $this->cache_path = $EE->config->item('ed_cache_path');
+        if ( ! $this->server_path ) $this->server_path = $this->EE->config->item('ed_server_path');
+        if ( ! $this->cache_path ) $this->cache_path = $this->EE->config->item('ed_cache_path');
             
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
@@ -126,6 +128,11 @@ Class Ed_imageresizer
      *
      */
     private function _run(){
+
+        $this->EE->load->helper('file');
+
+        // Should be using more of CodeIgniter in here
+        $file_info = get_file_info($this->server_path . $this->image);
 
         // are all paths writeable
         if (!file_exists($this->cache_path)) {
@@ -165,8 +172,10 @@ Class Ed_imageresizer
         }
         
         // Get the size and MIME type of the requested image
+        
         $this->size        = GetImageSize($this->server_path . $this->image);
         $this->mime        = $this->size['mime'];
+        $mtime       = $file_info['date'];
         
         // Make sure that the requested file is actually an image
         if (substr($this->mime, 0, 6) != 'image/') {
@@ -191,9 +200,11 @@ Class Ed_imageresizer
     
         // generate cached filename
         $this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale).$this->ext;
+        $cached_info = get_file_info($this->resized);
+        $cached_mtime = $cached_info['date'];
 
         // is already cached?
-        if (file_exists($this->resized)) {
+        if (file_exists($this->resized) && $cached_mtime > $mtime) {
             return $this->_compileImgTag();
         }
         
