@@ -75,7 +75,7 @@ Class Ed_imageresizer
         
         $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
         $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
-        $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode($this->EE->TMPL->fetch_param('image'))));
+        $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode(urldecode($this->EE->TMPL->fetch_param('image')))));
         $this->maxWidth       = $this->EE->TMPL->fetch_param('maxWidth') != '' ?   (int) $this->EE->TMPL->fetch_param('maxWidth')  : 0;
         $this->maxHeight      = $this->EE->TMPL->fetch_param('maxHeight') != '' ?  (int) $this->EE->TMPL->fetch_param('maxHeight') : 0;
         $this->color          = $this->EE->TMPL->fetch_param('color') != '' ? preg_replace('/[^0-9a-fA-F]/', '', (string) $this->EE->TMPL->fetch_param('color')) : FALSE;
