@@ -93,8 +93,8 @@ Class Ed_imageresizer
          * Load in cache path and server path from config if they exist
          *
          */
-        if ( ! $this->server_path ) $this->server_path = $this->EE->config->item('ed_server_path');
-        if ( ! $this->cache_path ) $this->cache_path = $this->EE->config->item('ed_cache_path');
+        if ( ! $this->server_path ) $this->server_path = rtrim($this->EE->config->item('ed_server_path'), '/');
+        if ( ! $this->cache_path ) $this->cache_path = rtrim($this->EE->config->item('ed_cache_path'), '/') . '/';
             
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 

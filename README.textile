@@ -7,8 +7,8 @@ h2. Installation
 # Copy pi.ed_imageresizer.php to @system/expressionengine/third_party/ed_imageresizer/@
 # Add path variables to your config at @system/expressionengine/config/config.php@:
 
-bc. $config['ed_server_path'] = '/var/www/html'; // no trailing slash
-$config['ed_cache_path'] = '/var/www/html/media/images/resizer_cache/'; // trailing slash
+bc. $config['ed_server_path'] = '/var/www/html/'; // Server path to your site's web root
+$config['ed_cache_path'] = '/var/www/html/media/images/resizer_cache/'; // Server path to where your resized images should be stored
 
 h2. Usage
 
