@@ -5,7 +5,7 @@
  * REQUIRES ExpressionEngine 2+
  * 
  * @package     ED_ImageResizer
- * @version     1.0.0
+ * @version     1.0.4
  * @author      Glen Swinfield (Erskine Design)
  * @copyright   Copyright (c) 2009 Erskine Design
  * @license     http://creativecommons.org/licenses/by-sa/3.0/ Attribution-Share Alike 3.0 Unported
@@ -13,7 +13,7 @@
  */
  
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '1.0.3',
+                        'pi_version'        => '1.0.4',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
