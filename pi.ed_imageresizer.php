@@ -3,15 +3,15 @@
 /**
  * Erskine Design ImageResizer (PHP5 only)
  * REQUIRES ExpressionEngine 2+
- * 
+ *
  * @package     ED_ImageResizer
  * @version     1.0.4
  * @author      Glen Swinfield (Erskine Design)
  * @copyright   Copyright (c) 2009 Erskine Design
  * @license     http://creativecommons.org/licenses/by-sa/3.0/ Attribution-Share Alike 3.0 Unported
- * 
+ *
  */
- 
+
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
                         'pi_version'        => '1.0.4',
                         'pi_author'         => 'Erskine Design',
@@ -21,29 +21,29 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
 
 /**
  * Ed_imageresizer For EE2.0
- * 
+ *
  * @package     ED_ImageResizer
  * @author      Erskine Design
  * @version     1.0.3
- * 
+ *
  */
 Class Ed_imageresizer
 {
-    
+
     public     $return_data     = '';           // return data (from constructor)
-    
+
     /**
      * Vars set in tag params
      */
     private $debug              = FALSE;    // produce error messages
     private $image              = '';       // The raw image (should be /images/folder/image.gif)
     private $quality            = '100';    // Image quality;
-    private $forceHeight        = FALSE;    // do we want to force the height of the imahe to maxHeight
+    private $forceHeight        = FALSE;    // do we want to force the height of the image to maxHeight
     private $forceWidth         = FALSE;    // do we want to force the width to maxWidth
     private $width              = '';       // the width of the original image
     private $height             = '';       // the height of the original image
     private $size               = '';       // array: original dimensions of image
-    private $mime               = '';       // the mime type of the original image 
+    private $mime               = '';       // the mime type of the original image
     private $data               = '';       // Holds image data
     private $cropratio          = '';       // crop ratio (if there is one)
     private $offsetX            = 0;        // x offset (crop)
@@ -56,11 +56,14 @@ Class Ed_imageresizer
     private $href_only          = '';       // only return the path to the file, not the full tag.
     private $ext                = '';
     private $grayscale          = '';
-    
+    private $align_x          	= 'c';
+    private $align_y          	= 'c';
+
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
     private $cache_path         = ''; // with trailing slash
-    
+	private $server_url			= ''; // no trailing slash
+
     private $memory_limit       = '36M'; // the memory limit to set
 
     private $EE                 = FALSE;
@@ -71,8 +74,8 @@ Class Ed_imageresizer
     public function Ed_imageresizer( )
     {
         $this->EE =& get_instance();
-        $this->EE->load->library('typography'); 
-        
+        $this->EE->load->library('typography');
+
         $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
         $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
         $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode(urldecode($this->EE->TMPL->fetch_param('image')))));
@@ -88,6 +91,33 @@ Class Ed_imageresizer
         $this->href_only      = $this->EE->TMPL->fetch_param('href_only');
         $this->debug          = $this->EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
         $this->grayscale      = $this->EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
+		$this->crop_align	  = $this->EE->TMPL->fetch_param('crop_align') != '' ? substr($this->EE->TMPL->fetch_param('crop_align'), 0, 1) : 'cc';
+
+		switch ( $this->EE->TMPL->fetch_param('crop_align') ){
+			case 'l':
+				$this->align_x= 'l';
+				break;
+			case 'r':
+				$this->align_x= 'r';
+				break;
+			case 't':
+				$this->align_y= 't';
+				break;
+			case 'b':
+				$this->align_y= 'b';
+				break;
+			default :
+				switch ( substr($this->crop_align, 0) ){
+					case 'l':
+					case 'r':
+						$this->align_x=	substr($this->crop_align, 0);
+				}
+				switch ( substr($this->crop_align, 1) ){
+					case 't':
+					case 'b':
+						$this->align_y= substr($this->crop_align, 1);
+				}
+		}
 
         /**
          * Load in cache path and server path from config if they exist
@@ -95,7 +125,7 @@ Class Ed_imageresizer
          */
         if ( ! $this->server_path ) $this->server_path = rtrim($this->EE->config->item('ed_server_path'), '/');
         if ( ! $this->cache_path ) $this->cache_path = rtrim($this->EE->config->item('ed_cache_path'), '/') . '/';
-            
+
         $error_string = '<div style="background:#f00; color:#fff; font:bold 11px verdana; padding:12px; border:2px solid #000">%s</div>';
 
         if( $this->cache_path == '' || $this->server_path == '' ) {
@@ -118,11 +148,11 @@ Class Ed_imageresizer
         elseif( is_array($ret)) {
             return;
         }
-        
+
         $this->return_data = $ret;
         return;
     }
-    
+
     /**
      * Runs all the elemenst of the resize process and returns the result.
      *
@@ -140,16 +170,16 @@ Class Ed_imageresizer
                 return array(false, 'fatal', 'Cache path is does not exist and cannot be created. Path: '.$this->cache_path);
             }
         }
-        
+
         if (!is_readable($this->cache_path)) {
             return array(false, 'fatal', 'Cache path is not readable. Path: '.$this->cache_path);
         }
-        
+
         if(!is_writable($this->cache_path)) {
             return array(false, 'fatal', 'Cache path is not writable. Path: '.$this->cache_path);
         }
         // ----
-        
+
         // is there an image, if ot try to use default
         if($this->image == '' && $this->default_image == '') {
             return array(false, 'fatal', 'No image or default image are set.');
@@ -157,31 +187,31 @@ Class Ed_imageresizer
         elseif( $this->image == '' && $this->default_image != '' ) {
             $this->image = $this->default_image;
         }
-        
+
         // if we get here an image has been set so make sure it starts with a slash.
         if($this->image{0} != '/') { $this->image = '/'.$this->image;}
-            
+
         // For security, directories cannot contain ':', images cannot contain '..' or '<', and images must start with '/'
         if (strpos(dirname($this->image), ':') || preg_match('/(\.\.|<|>)/', $this->image)) {
             return array(false, 'fatal', 'Image path is invalid. Image: '.$this->image);
         }
-            
+
         // If the image doesn't exist, or we haven't been told what it is, there's nothing that we can do
         if(!file_exists($this->server_path . $this->image) || is_dir($this->server_path . $this->image)) {
             return array(false, 'fatal', 'The image does not exist. Server path: '.$this->server_path . $this->image);
         }
-        
+
         // Get the size and MIME type of the requested image
-        
+
         $this->size        = GetImageSize($this->server_path . $this->image);
         $this->mime        = $this->size['mime'];
         $mtime       = $file_info['date'];
-        
+
         // Make sure that the requested file is actually an image
         if (substr($this->mime, 0, 6) != 'image/') {
             return array(false, 'fatal', 'The mime type of the image to be resized is not an image. '.substr($this->mime, 0, 6));
         }
-        
+
         $this->width    = $this->size[0];
         $this->height   = $this->size[1];
 
@@ -189,17 +219,17 @@ Class Ed_imageresizer
         if(strstr($this->mime,'jpg') || strstr($this->mime,'jpeg')) {
             $this->ext = '.jpg';
         }
-            
+
         if(strstr($this->mime,'gif')) {
             $this->ext = '.gif';
         }
-        
+
         if(strstr($this->mime,'png')) {
             $this->ext = '.png';
         }
-    
+
         // generate cached filename
-        $this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale).$this->ext;
+		$this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale . $this->crop_align).$this->ext;
         $cached_info = get_file_info($this->resized);
         $cached_mtime = $cached_info['date'];
 
@@ -207,8 +237,8 @@ Class Ed_imageresizer
         if (file_exists($this->resized) && $cached_mtime > $mtime) {
             return $this->_compileImgTag();
         }
-        
-        // calcualte the new dimensions that we are resizing to
+
+        // calculate the new dimensions that we are resizing to
         // after this call we will have $this->maxWidth and height
          // resize to a maximum height
         if ($this->maxHeight != '' && $this->maxWidth == '') {
@@ -218,63 +248,85 @@ Class Ed_imageresizer
         elseif ($this->maxWidth != '' && $this->maxHeight == '') {
             $this->maxHeight    = 99999999999999;
         }
-        // just coloring (colouring actually)
-        elseif ($this->color != '' && $this->maxWidth == '' && $this->maxHeight == '') {
+		// just coloring (colouring actually) or uncoloring or uncouloring
+		elseif ( ($this->color != '' || $this->grayscale != FALSE) && $this->maxWidth == '' && $this->maxHeight == '') {
             $this->maxWidth   = $this->width;
             $this->maxHeight  = $this->height;
         }
 
         // we don't want to force width or height so compile the finished tag and return false
-        if ( ( ( !$this->forceWidth && !$this->forceHeight ) && ( $this->maxWidth == '' && $this->maxHeight == '' ) ) || ( $this->color == '' && ($this->maxWidth >= $this->width) && ($this->maxHeight >= $this->height) && !$this->forceWidth && !$this->forceHeight ) ) {
-            $this->lastModifiedString    = gmdate('D, d M Y H:i:s', filemtime($this->server_path . $this->image)) . ' GMT';
-            $this->etag                  = md5($this->data);
-            $this->resized               = $this->server_path.$this->image; // we haven't actually resized it
-            return $this->_compileImgTag();
+		if ( ( !$this->forceWidth && !$this->forceHeight && $this->maxWidth == '' && $this->maxHeight == '' ) || ( $this->maxWidth >= $this->width && $this->maxHeight >= $this->height && !$this->forceWidth && !$this->forceHeight ) ) {
+			if ($this->color == '' && $this->grayscale == FALSE){
+				$this->lastModifiedString    = gmdate('D, d M Y H:i:s', filemtime($this->server_path . $this->image)) . ' GMT';
+				$this->etag                  = md5($this->data);
+				$this->resized               = $this->server_path.$this->image; // we haven't actually resized it
+				return $this->_compileImgTag();
+			}
         }
- 
+
         // if we get here we are going to need to try to do some resizing
         // so lets find out if we want to crop as well
         if($this->cropratio != '') {
             $this->_crop();
         }
-            
+
         // if we get here then we have enough to be getting on with so get the resizing underway.
         $this->_resize();
- 
+
         return $this->_compileImgTag();;
-    
+
     }
-            
+
     private function _crop(){
-        
+
         $this->cropratio    = explode(':', $this->cropratio);
-        
+
         if (count($this->cropratio) == 2) {
-            
+
             $this->ratioComputed        = $this->width / $this->height;
             $this->cropRatioComputed    = (float) $this->cropratio[0] / (float) $this->cropratio[1];
-                
+
             if ($this->ratioComputed < $this->cropRatioComputed) {
                 // Image is too tall so we will crop the top and bottom
                 $this->origHeight       = $this->height;
                 $this->height           = $this->width / $this->cropRatioComputed;
-                $this->offsetY          = ($this->origHeight - $this->height) / 2;
+				switch ($this->align_y){
+					case 'c':
+						$this->offsetY          = ($this->origHeight - $this->height) / 2;
+						break;
+					case 't':
+						$this->offsetY          = 0;
+						break;
+					case 'b':
+						$this->offsetY          = ($this->origHeight - $this->height);
+						break;
+				}
             } else if ($this->ratioComputed > $this->cropRatioComputed) {
                 // Image is too wide so we will crop off the left and right sides
                 $this->origWidth    = $this->width;
                 $this->width        = $this->height * $this->cropRatioComputed;
-                $this->offsetX      = ($this->origWidth - $this->width) / 2;
+				switch ($this->align_x){
+					case 'c':
+						$this->offsetX      = ($this->origWidth - $this->width) / 2;
+						break;
+					case 'l':
+						$this->offsetX      = 0;
+						break;
+					case 'r':
+						$this->offsetX      = ($this->origWidth - $this->width);
+						break;
+				}
             }
         }
     }
-    
+
     private function _resize() {
-        
+
         // Setting up the ratios needed for resizing. We will compare these below to determine how to
         // resize the image (based on height or based on width)
         $this->xRatio        = $this->maxWidth / $this->width;
         $this->yRatio        = $this->maxHeight / $this->height;
-        
+
         if ( ( ( $this->xRatio * $this->height ) < $this->maxHeight ) || $this->forceWidth === true )
         { // Resize the image based on width
             $this->tnHeight   = ceil($this->xRatio * $this->height);
@@ -285,13 +337,13 @@ Class Ed_imageresizer
             $this->tnWidth   = ceil($this->yRatio * $this->width);
             $this->tnHeight  = $this->maxHeight;
         }
-        
+
         // We don't want to run out of memory
         ini_set('memory_limit', $this->memory_limit);
-        
+
         // Set up a blank canvas for our resized image (destination)
         $this->dst    = imagecreatetruecolor($this->tnWidth, $this->tnHeight);
-        
+
         // Set up the appropriate image handling functions based on the original image's mime type
         switch ($this->mime)
         {
@@ -304,7 +356,7 @@ Class Ed_imageresizer
                 $this->doSharpen        = FALSE;
                 $this->quality          = round(10 - ($this->quality / 10)); // We are converting the GIF to a PNG and PNG needs a compression level of 0 (no compression) through 9
             break;
-            
+
             case 'image/x-png':
             case 'image/png':
                 $this->creationFunction = 'ImageCreateFromPng';
@@ -312,14 +364,14 @@ Class Ed_imageresizer
                 $this->doSharpen        = FALSE;
                 $this->quality          = round(10 - ($this->quality / 10)); // PNG needs a compression level of 0 (no compression) through 9
             break;
-            
+
             default:
                 $this->creationFunction = 'ImageCreateFromJpeg';
                 $this->outputFunction   = 'ImageJpeg';
                 $this->doSharpen        = FALSE;
             break;
         }
-        
+
         // Read in the original image
         $function   = $this->creationFunction;
         $this->src  = $function($this->server_path . $this->image);
@@ -334,22 +386,22 @@ Class Ed_imageresizer
                 // Fill the background with the specified color for matting purposes
                 if ($this->color[0] == '#')
                     $this->color = substr($this->color, 1);
-                
+
                 $this->background    = FALSE;
-                
+
                 if (strlen($this->color) == 6) {
                     $this->background    = imagecolorallocate($this->dst, hexdec($this->color[0].$this->color[1]), hexdec($this->color[2].$this->color[3]), hexdec($this->color[4].$this->color[5]));
                 }
                 else if (strlen($color) == 3) {
                     $this->background    = imagecolorallocate($this->dst, hexdec($this->color[0].$this->color[0]), hexdec($this->color[1].$this->color[1]), hexdec($this->color[2].$this->color[2]));
                 }
-                
+
                 if ($this->background) {
                     imagefill($this->dst, 0, 0, $this->background);
                 }
             }
         }
-        
+
         // Resample the original image into the resized canvas we set up earlier
         ImageCopyResampled($this->dst, $this->src, 0, 0, $this->offsetX, $this->offsetY, $this->tnWidth, $this->tnHeight, $this->width, $this->height);
         // try to grayscale it
@@ -358,13 +410,13 @@ Class Ed_imageresizer
         }
         $this->etag = $this->_saveFile();
     }
-    
+
     private function _saveFile(){
-        
+
         // Write the resized image to the cache
         $function = $this->outputFunction;
         $function($this->dst, $this->resized, $this->quality);
-        
+
         // Clean up the memory
         ImageDestroy($this->src);
         ImageDestroy($this->dst);
@@ -391,50 +443,50 @@ Class Ed_imageresizer
      *
      */
     private function _compileImgTag(){
-        
+
         if($this->href_only == 'yes') {
-            return str_replace($this->server_path, '', $this->resized);
+			return $this->server_url . (str_replace($this->server_path, '', $this->resized) );
         }
-        
+
         $size = GetImageSize($this->resized);
-                
+
         $width  = $size[0];
         $height = $size[1];
 
         $this->image_tag = '<img ';
-        
+
         // add class, id alt and title
         if($this->class != '') {
             $this->image_tag .= 'class="'.$this->class.'" ';
         }
-        
+
         if($this->id != '') {
             $this->image_tag .= 'id="'.$this->id.'" ';
         }
-        
+
         if($this->title != '') {
             $this->image_tag .= 'title="'.$this->title.'" ';
         }
-        
+
         if($this->alt != '') {
             $this->image_tag .= 'alt="'.$this->alt.'" ';
         } else {
           $this->image_tag .= 'alt="" ';
         }
-        
+
         $this->image_tag .= ' width="'.$width.'" height="'.$height.'" ';
-        
+
         $image_path = str_replace($this->server_path, '', $this->resized);
-        
-        $this->image_tag .= 'src="'.$image_path.'" />';
-        
+
+        $this->image_tag .= 'src="'.$this->server_url.$image_path.'" />';
+
         return $this->image_tag;
 
     }
-    
+
     static function usage()
 {
-	ob_start(); 
+	ob_start();
 	?>
 
 ** You must add the server and cache dir paths to the class variables in the plugin file! **
@@ -445,6 +497,8 @@ Example:
 // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
 private $server_path        = '/this/is/my/website/root/folder';                    // no trailing slash
 private $cache_path         = '/this/is/my/website/root/folder/and/image/cache/';   // with trailing slash
+private $server_url			= 'http://sub.domain.com';								// no trailing slash
+
 
 Paramaters:
 ----------
@@ -462,6 +516,7 @@ Paramaters:
 * href_only     ~ if yes just returns the path to the resized file, not the full image tag, useful for modal windows etc. accepts "yes" or "no"
 * debug         ~ defaults to no - yes for debug mode (creates error messages instead of quitting quietly) accepts "yes" or "no"
 * grayscale     ~ creates a grayscale version of the image accepts "yes" or "no"
+* crop_align    ~ sets the align of crop. First character for horizontal and second for vertical. "t", "r", "b", "l" and "c"
 
 Usage Example
 ----------
@@ -476,11 +531,11 @@ Usage Example
 
 	<?php
 	$buffer = ob_get_contents();
-	
-	ob_end_clean(); 
+
+	ob_end_clean();
 
 	return $buffer;
-        
+
     }
 
 }
