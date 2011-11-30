@@ -62,7 +62,7 @@ Class Ed_imageresizer
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
     private $cache_path         = ''; // with trailing slash
-	private $server_url			= ''; // no trailing slash
+    private $server_url		= ''; // OPTIONAL no trailing slash
 
     private $memory_limit       = '36M'; // the memory limit to set
 
