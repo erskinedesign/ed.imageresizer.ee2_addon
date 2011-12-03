@@ -13,7 +13,7 @@
  */
 
 $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
-                        'pi_version'        => '1.0.4',
+                        'pi_version'        => '1.0.5',
                         'pi_author'         => 'Erskine Design',
                         'pi_author_url'     => 'http://github.com/erskinedesign/',
                         'pi_description'    => 'Resizes and caches images on the fly',
@@ -24,7 +24,7 @@ $plugin_info = array(   'pi_name'           => 'EE2 ED Image Resizer',
  *
  * @package     ED_ImageResizer
  * @author      Erskine Design
- * @version     1.0.3
+ * @version     1.0.5
  *
  */
 Class Ed_imageresizer
@@ -58,11 +58,12 @@ Class Ed_imageresizer
     private $grayscale          = '';
     private $align_x          	= 'c';
     private $align_y          	= 'c';
+    private $baseline		= '';
 
     // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
     private $server_path        = ''; // no trailing slash
     private $cache_path         = ''; // with trailing slash
-    private $server_url		= ''; // OPTIONAL no trailing slash
+    private $server_url		= ''; // OPTIONAL - no trailing slash
 
     private $memory_limit       = '36M'; // the memory limit to set
 
@@ -91,7 +92,8 @@ Class Ed_imageresizer
         $this->href_only      = $this->EE->TMPL->fetch_param('href_only');
         $this->debug          = $this->EE->TMPL->fetch_param('debug') != 'yes' ? false : true;
         $this->grayscale      = $this->EE->TMPL->fetch_param('grayscale') != 'yes' ? false : true;
-		$this->crop_align	  = $this->EE->TMPL->fetch_param('crop_align') != '' ? substr($this->EE->TMPL->fetch_param('crop_align'), 0, 1) : 'cc';
+	$this->crop_align     = $this->EE->TMPL->fetch_param('crop_align') != '' ? substr($this->EE->TMPL->fetch_param('crop_align'), 0, 1) : 'cc';
+	$this->baseline       = $this->EE->TMPL->fetch_param('baseline');
 
 		switch ( $this->EE->TMPL->fetch_param('crop_align') ){
 			case 'l':
@@ -229,7 +231,7 @@ Class Ed_imageresizer
         }
 
         // generate cached filename
-		$this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale . $this->crop_align).$this->ext;
+		$this->resized = $this->cache_path . sha1($this->image . $this->forceWidth . $this->forceHeight . $this->color . $this->maxWidth . $this->maxHeight . $this->cropratio . $this->grayscale . $this->crop_align . $this->baseline).$this->ext;
         $cached_info = get_file_info($this->resized);
         $cached_mtime = $cached_info['date'];
 
@@ -290,6 +292,7 @@ Class Ed_imageresizer
                 // Image is too tall so we will crop the top and bottom
                 $this->origHeight       = $this->height;
                 $this->height           = $this->width / $this->cropRatioComputed;
+
 				switch ($this->align_y){
 					case 'c':
 						$this->offsetY          = ($this->origHeight - $this->height) / 2;
@@ -322,6 +325,8 @@ Class Ed_imageresizer
 
     private function _resize() {
 
+
+
         // Setting up the ratios needed for resizing. We will compare these below to determine how to
         // resize the image (based on height or based on width)
         $this->xRatio        = $this->maxWidth / $this->width;
@@ -337,6 +342,11 @@ Class Ed_imageresizer
             $this->tnWidth   = ceil($this->yRatio * $this->width);
             $this->tnHeight  = $this->maxHeight;
         }
+		
+	// Ajust the height of the blank canvas to match the baseline of layout
+	if ( is_numeric($this->baseline) ) {
+	    $this->tnHeight		= floor($this->tnHeight/$this->baseline) * $this->baseline;
+	}
 
         // We don't want to run out of memory
         ini_set('memory_limit', $this->memory_limit);
@@ -497,7 +507,7 @@ Example:
 // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
 private $server_path        = '/this/is/my/website/root/folder';                    // no trailing slash
 private $cache_path         = '/this/is/my/website/root/folder/and/image/cache/';   // with trailing slash
-private $server_url			= 'http://sub.domain.com';								// no trailing slash
+private $server_url			= 'http://sub.domain.com';								// OPTIONAL - no trailing slash
 
 
 Paramaters:
@@ -517,6 +527,7 @@ Paramaters:
 * debug         ~ defaults to no - yes for debug mode (creates error messages instead of quitting quietly) accepts "yes" or "no"
 * grayscale     ~ creates a grayscale version of the image accepts "yes" or "no"
 * crop_align    ~ sets the align of crop. First character for horizontal and second for vertical. "t", "r", "b", "l" and "c"
+* baseline	~ sets the typographic baseline to match the height of the generate image
 
 Usage Example
 ----------
