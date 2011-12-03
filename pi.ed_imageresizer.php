@@ -505,9 +505,9 @@ Example:
 ---------
 
 // ADD PATHS TO YOUR WEB ROOT AND CACHE FOLDER HERE
-private $server_path        = '/this/is/my/website/root/folder';                    // no trailing slash
-private $cache_path         = '/this/is/my/website/root/folder/and/image/cache/';   // with trailing slash
-private $server_url			= 'http://sub.domain.com';								// OPTIONAL - no trailing slash
+private $server_path = '/this/is/my/website/root/folder';                    // no trailing slash
+private $cache_path  = '/this/is/my/website/root/folder/and/image/cache/';   // with trailing slash
+private $server_url  = 'http://sub.domain.com';				// OPTIONAL - no trailing slash
 
 
 Paramaters:
