@@ -9,6 +9,8 @@ h2. Installation
 
 bc. $config['ed_server_path'] = '/var/www/html/'; // Server path to your site's web root
 $config['ed_cache_path'] = '/var/www/html/media/images/resizer_cache/'; // Server path to where your resized images should be stored
+$config['server_url']	= 'http://sub.domain.com'; // OPTIONAL - no trailing slash
+
 
 h2. Usage
 
@@ -28,6 +30,9 @@ h3. Parameters
 * @href_only@ (boolean "yes" or "no", default "no") : if yes, will return only the href, not the image tag
 * @debug@ (boolean "yes" or "no", default "no") : will optionally output an error message if one is encountered, otherwise will fail silently
 * @grayscale@ (boolean "yes" or "no", default "no") : grayscales the resized image
+* @crop_align@ (string "t", "r", "b", "l" and "c", default "cc") : sets the align of crop. First character for horizontal and second for vertical.
+* @baseline@ (number) : sets the typographic baseline to match the height of image
+
 
 h3. Usage example
 
