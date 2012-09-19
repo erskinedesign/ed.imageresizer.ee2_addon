@@ -195,8 +195,8 @@ Class Ed_imageresizer
             $this->image = $img_name;
 
         } else {
-            $this->image  = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', $this->image));
-            $this->img_path = $this->server_path . $this->image;
+           $this->image  = $this->EE->typography->parse_file_paths(preg_replace('/^(?:(?:s?f|ht)tps?:)?\/\/[^\/]+/i', '', $this->image));
+           $this->img_path = $this->server_path . $this->image;
         }
 
 
