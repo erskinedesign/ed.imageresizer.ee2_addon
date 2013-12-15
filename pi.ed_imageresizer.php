@@ -73,6 +73,10 @@ Class Ed_imageresizer
         $this->EE =& get_instance();
         $this->EE->load->library('typography'); 
         
+        // Put Your vars in the config!
+        $this->server_path = $this->EE->config->item('ed_imageresizer_server_path') ? $this->EE->config->item('ed_imageresizer_server_path') : '';
+        $this->cache_path = $this->EE->config->item('ed_imageresizer_cache_path') ? $this->EE->config->item('ed_imageresizer_cache_path') : '';
+        
         $this->forceWidth     = $this->EE->TMPL->fetch_param('forceWidth') != 'yes' ? FALSE : TRUE;
         $this->forceHeight    = $this->EE->TMPL->fetch_param('forceHeight') != 'yes' ? FALSE : TRUE;
         $this->image          = $this->EE->typography->parse_file_paths(preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string) html_entity_decode(urldecode($this->EE->TMPL->fetch_param('image')))));
